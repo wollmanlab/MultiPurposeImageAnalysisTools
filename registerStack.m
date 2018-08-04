@@ -64,6 +64,7 @@ if strcmp(mtd,'xcorr')
         gputest = true;
     catch
         gputest = false;
+    end
 end
 
 if strcmp(mtd,'rascal')
