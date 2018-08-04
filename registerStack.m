@@ -59,7 +59,11 @@ mtd=arg.method;
 flt=arg.filter;
 
 if strcmp(mtd,'xcorr')
-    refimg=gpuArray(refimg);
+    try
+        refimg=gpuArray(refimg);
+        gputest = true;
+    catch
+        gputest = false;
 end
 
 if strcmp(mtd,'rascal')
@@ -84,7 +88,9 @@ for i=1:numel(ix)
         case 'intensity'
             tforms(i) = imregtform(img,refimg,'translation',optimizer, metric);
         case 'xcorr'
-            img = gpuArray(img); 
+            if gputest
+                img = gpuArray(img); 
+            end
             cc=normxcorr2(img,refimg);
             [~, imax] = max(abs(cc(:)));
             imax=gather(imax);
