@@ -28,6 +28,6 @@ else
     w = [w w];
 end
 
-out = convn(padarrayXT(input, [w(1) w(1) w(2)], borderCondition), g', 'valid');
+out = convn(padarray(input, [w(1) w(1) w(2)], borderCondition), g', 'valid');
 out = convn(out, g, 'valid');
 out = convn(out, gz, 'valid');

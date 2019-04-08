@@ -137,13 +137,15 @@ else
 
     % if we're augmenting, sparse matrices are produced. This will be
     % problematic with cost 0
-    if any(cc(:)==0) && ~issparse(cc)
-        validCC = cc ~= NONLINK_MARKER;
-        if any(any(cc(validCC))) < 0
-            warning('LAP:negativeCosts',...
-                'there are negative and zero costs. This could lead to errors')
+    if ~issparse(cc) %splitting the IFs save you a lot of time and memory!
+        if any(cc(:)==0) 
+            validCC = cc ~= NONLINK_MARKER;
+            if any(any(cc(validCC))) < 0
+                warning('LAP:negativeCosts',...
+                    'there are negative and zero costs. This could lead to errors')
+            end
+            cc(validCC) = cc(validCC) + 10;
         end
-        cc(validCC) = cc(validCC) + 10;
     end
 
 end
@@ -155,7 +157,7 @@ end
 % end
 
 if nargin < 5 || isempty(noLinkCost)
-    noLinkCost = max(max(cc)) + 1;
+    noLinkCost = max(cc(:)) + 1;
 end
 
 % if we have -1 as non-link-marker, and we get it everywhere, we get

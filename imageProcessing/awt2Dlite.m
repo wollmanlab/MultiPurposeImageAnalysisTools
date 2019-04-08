@@ -1,4 +1,4 @@
-function W = awt2Dlite(I, varargin)
+function W = awt2Dlite(I, varargin) %%codegen 
     % W = AWT(I) computes the A Trou Wavelet Transform of image I.
     % A description of the algorithm can be found in:
     % J.-L. Starck, F. Murtagh, A. Bijaoui, "Image Processing and Data
@@ -48,7 +48,7 @@ function W = awt2Dlite(I, varargin)
     
     
 function F = convolve(I, k)
-    [N, M, L] = size(I);
+    %[N, M, L] = size(I);
     k1 = 2^(k - 1);
     k2 = 2^k;
     

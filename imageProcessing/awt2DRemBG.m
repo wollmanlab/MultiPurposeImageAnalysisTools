@@ -44,7 +44,7 @@ function W = awt2DRemBG(I, varargin)
         lastA = newA;
     end
     
-    W = W+min(lastA(:));
+    %W = W+min(lastA(:));
     
     
 function F = convolve(I, k)

@@ -18,6 +18,7 @@ arg.samplingfcn=@(x) prctile(x,arg.percentile);
 orgsamplingfcn=arg.samplingfcn; 
 arg.samplingdensity=15;
 arg.fgauss=fspecial('gauss',11,5);
+arg.gsigma = 5;
 arg.interpmethod='bilinear';
 arg.smoothstk = false; 
 
@@ -37,7 +38,7 @@ end
 
 
 if ndims(I)==3
-    %% subtrack background one slice at a time
+    %% subtract background one slice at a time
     bck = zeros(size(I),'single');
     if arg.timeskip==1
         for i=1:size(I,3)
@@ -149,7 +150,8 @@ switch arg.smoothmethod
         % transform tps values from vector to matrix form
         bcksml = reshape(avals,size(r));
     case 'gauss'
-        bcksml = imfilter(bcksml,arg.fgauss,'symmetric');
+        % bcksml = imfilter(bcksml,arg.fgauss,'symmetric');
+        bcksml = imgaussfilt(bcksml, gsigma,'padding', 'symmetric');
     otherwise
         error('unsupported smoothing method')
 end
