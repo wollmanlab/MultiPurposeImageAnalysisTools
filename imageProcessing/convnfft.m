@@ -47,29 +47,21 @@ function C = convnfft(A, B, varargin)
 % 
 %   Author: Deepak Roy Chittajallu
 %  
-%       
+%   Fix input parsing. Alon Oyler-Yaniv 
 
-    p = inputParser;
-
-    p.addRequired( 'A', @isnumeric );
-    p.addRequired( 'B', @isnumeric );
-    p.parse(A, B);
 
     nd = max(ndims(A),ndims(B));
 
-    p.addOptional( 'shape', 'full', @(x) (ischar(x) && ismember(x, {'full', 'same', 'valid'}) ) );
-    p.addOptional( 'dims', 1:nd, @(x) (isnumeric(x) && ~any(x < 1 || x > nd)) );
-    p.addParamValue( 'UseGPU', false, @(x) (isscalar(x) && islogical(x)) );
-    p.addParamValue( 'UsePowerOfTwo', false, @(x) (isscalar(x) && islogical(x)) );
-    p.parse(A, B, varargin{:});
 
-    shape = p.Results.shape;
-    dims = p.Results.dims;
-    flagUseGPU = p.Results.UseGPU;
-    flagPower2 = p.Results.UsePowerOfTwo;
+    
+    shape = ParseInputs('shape','full',varargin);
+    dims = ParseInputs('dims',1:nd,varargin);
+    flagUseGPU = ParseInputs('UseGPU',false,varargin);
+    flagPower2 = ParseInputs('UsePowerOfTwo',false,varargin);
+
 
     if flagUseGPU
-        flagUseGPU = false; % for not this not supported
+        flagUseGPU = true; % for not this not supported
     end
         
     dims = reshape(unique(dims), 1, []); % row (needed for for-loop index)
@@ -104,28 +96,32 @@ function C = convnfft(A, B, varargin)
         % pad arrays with zeros
         subsA(1:ndims(A)) = {':'};
         subsB(1:ndims(B)) = {':'};
+        
+        
+        m = size(A);
+        n = size(B);
+        
         for dim=dims
-            m = size(A,dim);
-            n = size(B,dim);
-            l = lfftfun(m+n-1);               
             
-            if l < m
+            l = lfftfun(m(dim)+n(dim)-1);               
+            
+            if l < m(dim)
                 subsA(1:ndims(A)) = {':'};
                 subsA{dim} = 1:l;
                 A = A(subsA{:});
-            elseif l > m
+            elseif l > m(dim)
                 subsA(1:ndims(A)) = {':'};
-                subsA{dim} = m+1:l;
+                subsA{dim} = m(dim)+1:l;
                 A(subsA{:}) = 0;
             end
             
-            if l < n
+            if l < n(dim)
                 subsB(1:ndims(B)) = {':'};
                 subsB{dim} = 1:l;
                 B = B(subsB{:});
-            elseif l > n
+            elseif l > n(dim)
                 subsB(1:ndims(B)) = {':'};
-                subsB{dim} = m+1:l;
+                subsB{dim} = m(dim)+1:l;
                 B(subsB{:}) = 0;
             end
         end
@@ -136,18 +132,25 @@ function C = convnfft(A, B, varargin)
         
         % do the fft
         subs(1:ndims(A)) = {':'};
+
         for dim=dims
             % We need to swap dimensions because GPU FFT works along the first dimension
             if dim~=1 % do the work when only required
-                swap = 1:nd;
-                swap([1 dim]) = swap([dim 1]);
-                A = permute(A, swap);
-                B = permute(B, swap);
+                %swap = 1:nd;
+                %swap([1 dim]) = swap([dim 1]);
+                A = permute(A, [2:nd 1]);
+                B = permute(B, [2:nd 1]);
             end
-            A = fft(A);
-            B = fft(B);
-            subs{dim} = ifun(m,n);
+            
+            l = lfftfun(m(dim)+n(dim)-1); 
+            
+            A = fft(A,l);
+            B = fft(B,l);
+            
+            subs{dim} = ifun(m(dim),n(dim));
         end
+        A = permute(A, [2:nd 1]);
+        B = permute(B, [2:nd 1]);
         
     else
         
@@ -170,11 +173,17 @@ function C = convnfft(A, B, varargin)
     % multiply the ffts of A and B element-wise 
     C = A .* B;
 
+
+    
     % translate C back from frequency domain
     for dim=dims
         C = ifft(C,[],dim);
     end
-
+    
+    if flagUseGPU
+        C = gather(C);
+    end
+    
     % Truncate the results
     if ABreal
         % Make sure the result is real
@@ -183,9 +192,7 @@ function C = convnfft(A, B, varargin)
         C = C(subs{:});
     end
             
-    if flagUseGPU
-        C = gather(C);
-    end
+
     
 end
 
